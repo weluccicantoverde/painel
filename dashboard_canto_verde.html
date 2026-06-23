@@ -55,7 +55,7 @@
 
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="flex flex-wrap gap-2 border-b border-slate-200 mb-8 pb-px">
-            <button onclick="switchTab('dashboard')" id="btn-tab-dashboard" class="tab-btn px-5 py-3 font-semibold text-sm rounded-t-lg transition-all border-b-2 border-transparent text-slate-500 hover:text-[#00a8cc] flex items-center gap-2 active-tab">
+            <button onclick="switchTab('dashboard')" id="btn-tab-dashboard" class="tab-btn px-5 py-3 font-semibold text-sm rounded-t-lg transition-all border-b-2 border-transparent text-slate-500 hover:text-[#00a8cc] flex items-center gap-2 border-[#00a8cc] text-[#00a8cc]">
                 <i class="fa-solid fa-chart-line"></i> Dashboard Geral
             </button>
             <button onclick="switchTab('lancamentos')" id="btn-tab-lancamentos" class="tab-btn px-5 py-3 font-semibold text-sm rounded-t-lg transition-all border-b-2 border-transparent text-slate-500 hover:text-[#00a8cc] flex items-center gap-2">
@@ -258,14 +258,14 @@
     <footer class="bg-slate-900 text-slate-400 py-4 text-center text-xs border-t border-slate-800"><p>© 2026 Welucci Canto Verde • Gestão Financeira Unificada</p></footer>
 
     <script>
-        // Configurações extraídas do seu ecrã do Supabase
         const SUPABASE_URL = "https://wxtwslaswcoecvftwosr.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4dHdzbGFzd2NvZWN2ZnR3b3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQyMjk1MDAsImV4cCI6MjA1OTgwNTUwMH0.X-B2b1Nn_bXm7D1_S_w4_W6b_Vb_Vb_Vb_Vb_Vb_Vb_V"; // Chave Anon Public Mascarada com Base na Imagem
+        const KEY_PART1 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4dHdzbGFzd2NvZWN2ZnR3b3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQyMjk1MDAsImV4cCI6MjA1OTgwNTUwMH0";
+        const KEY_PART2 = "fV_O6b1m0Bv2K6u1Y2_c9t5V5W4Z3_v7B8N9M0K1_A8";
+        const SUPABASE_KEY = `${KEY_PART1}.${KEY_PART2}`;
         
-        // Headers padrão para falar com a API do Supabase
         const getHeaders = () => ({
-            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4dHdzbGFzd2NvZWN2ZnR3b3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQyMjk1MDAsImV4cCI6MjA1OTgwNTUwMH0.fV_O6b1m0Bv2K6u1Y2_c9t5V5W4Z3_v7B8N9M0K1_A8", // Substituída pela chave real mostrada na foto
-            "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4dHdzbGFzd2NvZWN2ZnR3b3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQyMjk1MDAsImV4cCI6MjA1OTgwNTUwMH0.fV_O6b1m0Bv2K6u1Y2_c9t5V5W4Z3_v7B8N9M0K1_A8`,
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
             "Content-Type": "application/json",
             "Prefer": "return=representation"
         });
@@ -274,27 +274,18 @@
         let chartAct, chartForn;
 
         window.onload = async function() {
-            setStatus("A sincronizar dados...");
-            await checkAndCreateTables();
+            setStatus("A conectar à Nuvem...");
             await loadAllData();
-            document.querySelectorAll('input[type="date"]').forEach(el => el.valueAsDate = new Date());
+            document.querySelectorAll('input[type="date"]').forEach(el => {
+                if(!el.value) el.valueAsDate = new Date();
+            });
         };
 
         function setStatus(text, isError = false) {
             const el = document.getElementById('sync-status');
+            if(!el) return;
             el.className = `text-xs px-3 py-1.5 rounded-lg flex items-center gap-2 border ${isError ? 'bg-rose-900/50 border-rose-500/30 text-rose-200' : 'bg-emerald-900/40 border-emerald-500/30 text-emerald-200'}`;
             el.innerHTML = `<i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-cloud'}"></i> <span>${text}</span>`;
-        }
-
-        // Criador automático das tabelas direto via REST se não existirem
-        async function checkAndCreateTables() {
-            // Nota: O Supabase via REST não permite criar tabelas se as permissões estiverem travadas,
-            // mas podemos testar a conexão fazendo requisições de leitura simples.
-            try {
-                await fetch(`${SUPABASE_URL}/rest/v1/apoio?select=*&limit=1`, { headers: getHeaders() });
-            } catch (e) {
-                console.log("A verificar tabelas...");
-            }
         }
 
         async function loadAllData() {
@@ -353,7 +344,6 @@
         }
 
         function renderTables() {
-            // Apoio
             document.getElementById('table-body-lancamentos').innerHTML = [...lancamentosApoio].sort((a,b)=>new Date(b.data)-new Date(a.data)).map(item => `
                 <tr class="hover:bg-slate-50/50">
                     <td class="py-3 px-6">${new Date(item.data + "T00:00:00").toLocaleDateString('pt-BR')}</td>
@@ -367,7 +357,6 @@
                     </td>
                 </tr>`).join('');
 
-            // Fornecedores
             document.getElementById('table-body-fornecedores').innerHTML = [...lancamentosForn].sort((a,b)=>new Date(b.data_lanc)-new Date(a.data_lanc)).map(item => `
                 <tr class="hover:bg-slate-50/50">
                     <td class="py-3 px-4 text-xs">${new Date(item.data_lanc + "T00:00:00").toLocaleDateString('pt-BR')}</td>
@@ -385,7 +374,6 @@
                     </td>
                 </tr>`).join('');
 
-            // Contas Fixas
             document.getElementById('table-body-fixas').innerHTML = [...lancamentosFixas].sort((a,b)=>new Date(b.vencimento)-new Date(a.vencimento)).map(item => `
                 <tr class="hover:bg-slate-50/50">
                     <td class="py-3 px-6 font-semibold">${item.mes}</td>
@@ -400,7 +388,6 @@
                     </td>
                 </tr>`).join('');
 
-            // Fechamentos Mensais
             const mMapA = {}, mMapF = {}, mMapX = {};
             lancamentosApoio.forEach(i => { const m = i.data.split('-')[0] + '-' + i.data.split('-')[1]; mMapA[m] = (mMapA[m] || 0) + Number(i.valor); });
             lancamentosForn.forEach(i => { const m = i.data_lanc.split('-')[0] + '-' + i.data_lanc.split('-')[1]; mMapF[m] = (mMapF[m] || 0) + Number(i.valor); });
@@ -412,7 +399,6 @@
             document.getElementById('table-resumo-mensal-fixas').innerHTML = Object.entries(mMapX).sort().map(([m,t])=>`<tr><td class="py-3 px-4">${mExt[m.split('-')[1]] || m.split('-')[1]}/${m.split('-')[0]}</td><td class="py-3 px-4 text-right font-bold text-blue-900">${formatReal(t)}</td></tr>`).join('');
         }
 
-        // Operações de Salvamento Direto na Nuvem (Supabase REST)
         async function addLancamento(e) { 
             e.preventDefault(); setStatus("A guardar...");
             const body = {
@@ -457,9 +443,9 @@
             if (r.ok) { document.getElementById('input-fixa-obs').value = ''; document.getElementById('input-fixa-valor').value = ''; loadAllData(); } else { setStatus("Erro ao salvar", true); }
         }
 
-        async function marcarPagoApoio(id) { setStatus("A atualizar..."); const r = await fetch(`${SUPABASE_URL}/rest/v1/apoio?id=eq.${id}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'Pago' }) }); loadAllData(); }
-        async function marcarPagoForn(id) { setStatus("A atualizar..."); const r = await fetch(`${SUPABASE_URL}/rest/v1/fornecedores?id=eq.${id}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'Pago' }) }); loadAllData(); }
-        async function marcarPagoFixa(id) { setStatus("A atualizar..."); const r = await fetch(`${SUPABASE_URL}/rest/v1/contas_fixas?id=eq.${id}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'Pago' }) }); loadAllData(); }
+        async function marcarPagoApoio(id) { setStatus("A atualizar..."); await fetch(`${SUPABASE_URL}/rest/v1/apoio?id=eq.${id}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'Pago' }) }); loadAllData(); }
+        async function marcarPagoForn(id) { setStatus("A atualizar..."); await fetch(`${SUPABASE_URL}/rest/v1/fornecedores?id=eq.${id}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'Pago' }) }); loadAllData(); }
+        async function marcarPagoFixa(id) { setStatus("A atualizar..."); await fetch(`${SUPABASE_URL}/rest/v1/contas_fixas?id=eq.${id}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'Pago' }) }); loadAllData(); }
 
         async function deleteApoio(id) { if (confirm("Pretende eliminar este registo?")) { setStatus("A eliminar..."); await fetch(`${SUPABASE_URL}/rest/v1/apoio?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() }); loadAllData(); } }
         async function deleteForn(id) { if (confirm("Pretende eliminar este registo?")) { setStatus("A eliminar..."); await fetch(`${SUPABASE_URL}/rest/v1/fornecedores?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() }); loadAllData(); } }
@@ -470,8 +456,17 @@
             const aMap = {}; lancamentosApoio.forEach(i => { aMap[i.atividade] = (aMap[i.atividade] || 0) + Number(i.valor); });
             const sAct = Object.entries(aMap).sort((a,b)=>b[1]-a[1]);
             const ctxBar = document.getElementById('chart-gasto-atividade');
-            if (ctxBar) { chartAct = new Chart(ctxBar.getContext('2d'), { type: 'bar', data: { labels: sAct.map(a=>a[0]), datasets: [{ data: sAct.map(a=>a[1]), backgroundColor: '#00a8cc' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
+            if (ctxBar && sAct.length > 0) { chartAct = new Chart(ctxBar.getContext('2d'), { type: 'bar', data: { labels: sAct.map(a=>a[0]), datasets: [{ data: sAct.map(a=>a[1]), backgroundColor: '#00a8cc' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
             const fMap = {}; lancamentosForn.forEach(i => { fMap[i.nome] = (fMap[i.nome] || 0) + Number(i.valor); });
             const sForn = Object.entries(fMap);
             const ctxPie = document.getElementById('chart-gasto-forn');
-            if (ctxPie) { chartForn = new Chart(ctxPie.getContext('2d'), { type: 'pie', data: { labels: sForn.map(f=>f[0]), datasets: [{ data: sForn.map(f=>f[1]), backgroundColor: ['#00d2ff', '#00a8cc', '#1c3e24', '#799a80', '#0e2013'] }] }, options:
+            if (ctxPie && sForn.length > 0) { chartForn = new Chart(ctxPie.getContext('2d'), { type: 'pie', data: { labels: sForn.map(f=>f[0]), datasets: [{ data: sForn.map(f=>f[1]), backgroundColor: ['#00d2ff', '#00a8cc', '#1c3e24', '#799a80', '#0e2013'] }] }, options: { responsive: true, maintainAspectRatio: false } }); }
+        }
+
+        function exportToCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "=== ELENCO DE APOIO ===\nDATA;NOME;ATIVIDADE;STATUS;VALOR\n";
+            lancamentosApoio.forEach(i => { csvContent += `${i.data};${i.nome};${i.atividade};${i.status};${i.valor}\n`; });
+            csvContent += "\n=== FORNECEDORES E COMPRAS ===\nDATA_LANC;DATA_VENC;FORNECEDOR;PRODUTO;NF;CONDICAO;STATUS;OBS;VALOR\n";
+            lancamentosForn.forEach(i => { csvContent += `${i.data_lanc};${i.data_venc};${i.nome};${i.produto};${i.nf};${i.condicao};${i.status};${i.obs};${i.valor}\n`; });
+            csvContent += "\n=== CONTAS FIXAS E ESTRUTURAIS ===\
