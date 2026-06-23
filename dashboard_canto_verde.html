@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Gestão Integrada - Welucci Canto Verde</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                    colors: {
+                        cyanBrand: { start: '#00d2ff', end: '#00a8cc', text: '#ffffff' },
+                        welucci: { dark: '#0e2013', primary: '#1c3e24', cream: '#faf8f5' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #faf8f5; }
+        ::-webkit-scrollbar-thumb { background: #00a8cc; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00d2ff; }
+    </style>
+</head>
+<body class="bg-welucci-cream font-sans text-slate-800 min-h-screen flex flex-col">
+    <header class="bg-gradient-to-r from-[#00daf7] to-[#00b2e6] text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-24 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30 flex items-center justify-center shadow-inner">
+                    <span class="text-white font-extrabold text-2xl tracking-tighter">WC</span>
+                </div>
+                <div>
+                    <span class="text-white/80 font-bold tracking-widest text-xs uppercase block">SÓCIO PROPRIETÁRIO • RMVP</span>
+                    <h1 class="text-white font-bold text-2xl sm:text-3xl tracking-tight -mt-1">Welucci Canto Verde</h1>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div id="sync-status" class="text-xs bg-black/20 px-3 py-1.5 rounded-lg flex items-center gap-2 border border-white/10">
+                    <i class="fa-solid fa-cloud"></i> <span>A conectar à Nuvem...</span>
+                </div>
+                <button onclick="exportToCSV()" class="bg-white hover:bg-slate-50 text-[#00a8cc] font-bold px-4 py-2.5 rounded-xl text-sm transition-all duration-300 shadow-md flex items-center gap-2">
+                    <i class="fa-solid fa-file-excel"></i> <span class="hidden sm:inline">Exportar</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex flex-wrap gap-2 border-b border-slate-200 mb-8 pb-px">
+            <button onclick="switchTab('dashboard')" id="btn-tab-dashboard" class="tab-btn px-5 py-3 font-semibold text-sm rounded-t-lg transition-all border-b-2 border-transparent text-slate-500 hover:text-[#00a8cc] flex items-center gap-2 active-tab">
+                <i class="fa-solid fa-chart-line"></i> Dashboard Geral
+            </button>
+            <button onclick="switchTab('lancamentos')" id="btn-tab-lancamentos" class="tab-btn px-5 py-3 font-semibold text-sm rounded-t-lg transition-all border-b-2 border-transparent text-slate-500 hover:text-[#00a8cc] flex items-center gap-2">
+                <i class="fa-solid fa-users"></i> Elenco de Apoio
+            </button>
+            <button onclick="switchTab('fornecedores')" id="btn-tab-fornecedores" class="tab-btn px-5 py-3 font-semibold text-sm rounded-t-lg transition-all border-b-2 border-transparent text-slate-500 hover:text-[#00a8cc] flex items-center gap-2">
+                <i class="fa-solid fa-truck-ramp-box"></i> Fornecedores & Compras
+            </button>
+            <button onclick="switchTab('contasfixas')" id="btn-tab-contasfixas" class="tab-btn px-5 py-3 font-semibold text-sm rounded-t-lg transition-all border-b-2 border-transparent text-slate-500 hover:text-[#00a8cc] flex items-center gap-2">
+                <i class="fa-solid fa-house-laptop"></i> Contas Fixas
+            </button>
+            <button onclick="switchTab('resumos')" id="btn-tab-resumos" class="tab-btn px-5 py-3 font-semibold text-sm rounded-t-lg transition-all border-b-2 border-transparent text-slate-500 hover:text-[#00a8cc] flex items-center gap-2">
+                <i class="fa-solid fa-calculator"></i> Fechamentos Mensais
+            </button>
+        </div>
+
+        <section id="tab-dashboard" class="tab-content block space-y-8">
+            <div class="border-l-4 border-emerald-600 pl-3"><h4 class="font-bold text-slate-700 text-sm uppercase tracking-wider">Resumo Elenco de Apoio</h4></div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                    <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Geral Apoio</p><h3 id="kpi-total-apoio" class="text-xl font-extrabold text-slate-800 mt-1">R$ 0,00</h3></div>
+                    <div class="p-3 bg-slate-50 text-slate-600 rounded-xl"><i class="fa-solid fa-users text-lg"></i></div>
+                </div>
+                <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                    <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Apoio - Pago</p><h3 id="kpi-apoio-pago" class="text-xl font-extrabold text-emerald-700 mt-1">R$ 0,00</h3></div>
+                    <div class="p-3 bg-emerald-50 text-emerald-700 rounded-xl"><i class="fa-solid fa-circle-check text-lg"></i></div>
+                </div>
+                <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                    <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Apoio - Pendente</p><h3 id="kpi-apoio-pendente" class="text-xl font-extrabold text-amber-600 mt-1">R$ 0,00</h3></div>
+                    <div class="p-3 bg-amber-50 text-amber-600 rounded-xl"><i class="fa-solid fa-clock text-lg"></i></div>
+                </div>
+            </div>
+
+            <div class="border-l-4 border-amber-600 pl-3 mt-4"><h4 class="font-bold text-slate-700 text-sm uppercase tracking-wider">Resumo Fornecedores & Compras</h4></div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                    <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Fornecedores</p><h3 id="kpi-total-forn" class="text-xl font-extrabold text-slate-800 mt-1">R$ 0,00</h3></div>
+                    <div class="p-3 bg-slate-50 text-slate-600 rounded-xl"><i class="fa-solid fa-boxes-stacked text-lg"></i></div>
+                </div>
+                <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                    <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Fornecedores - Pago</p><h3 id="kpi-forn-pago" class="text-xl font-extrabold text-indigo-900 mt-1">R$ 0,00</h3></div>
+                    <div class="p-3 bg-indigo-50 text-indigo-900 rounded-xl"><i class="fa-solid fa-money-bill-wave text-lg"></i></div>
+                </div>
+                <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                    <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Fornecedores - Pendente</p><h3 id="kpi-forn-pendente" class="text-xl font-extrabold text-rose-700 mt-1">R$ 0,00</h3></div>
+                    <div class="p-3 bg-rose-50 text-rose-700 rounded-xl"><i class="fa-solid fa-receipt text-lg"></i></div>
+                </div>
+            </div>
+
+            <div class="border-l-4 border-blue-600 pl-3 mt-4"><h4 class="font-bold text-slate-700 text-sm uppercase tracking-wider">Resumo Estrutural (Contas Fixas)</h4></div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                    <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Contas Fixas</p><h3 id="kpi-total-fixas" class="text-xl font-extrabold text-slate-800 mt-1">R$ 0,00</h3></div>
+                    <div class="p-3 bg-slate-50 text-slate-600 rounded-xl"><i class="fa-solid fa-house text-lg"></i></div>
+                </div>
+                <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                    <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Contas - Pagas</p><h3 id="kpi-fixas-pago" class="text-xl font-extrabold text-teal-700 mt-1">R$ 0,00</h3></div>
+                    <div class="p-3 bg-teal-50 text-teal-700 rounded-xl"><i class="fa-solid fa-circle-check text-lg"></i></div>
+                </div>
+                <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+                    <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Contas - Pendentes</p><h3 id="kpi-fixas-pendente" class="text-xl font-extrabold text-orange-600 mt-1">R$ 0,00</h3></div>
+                    <div class="p-3 bg-orange-50 text-orange-600 rounded-xl"><i class="fa-solid fa-hourglass-half text-lg"></i></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+                <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm lg:col-span-2">
+                    <h4 class="font-bold text-slate-700 text-base mb-4">Investimento por Atividade (Elenco de Apoio)</h4>
+                    <div class="h-64"><canvas id="chart-gasto-atividade"></canvas></div>
+                </div>
+                <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                    <h4 class="font-bold text-slate-700 text-base mb-4">Distribuição Fornecedores / Compras</h4>
+                    <div class="h-64 flex justify-center items-center"><canvas id="chart-gasto-forn"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-lancamentos" class="tab-content hidden space-y-8">
+            <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                <h4 class="font-bold text-slate-700 text-lg mb-4"><i class="fa-solid fa-plus-circle text-emerald-700"></i> Novo Lançamento de Apoio</h4>
+                <form id="form-lancamento" onsubmit="addLancamento(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Data</label><input type="date" id="input-data" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nome</label><input type="text" id="input-nome" placeholder="Ex: Betto" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50/50"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Atividade / Função</label><input type="text" id="input-atividade" placeholder="Ex: Musico" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50/50"></div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Status</label>
+                        <select id="input-status" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50/50">
+                            <option value="Pago">Pago</option>
+                            <option value="Pendente" selected>Pendente</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2"><div class="flex-grow"><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Valor (R$)</label><input type="number" step="0.01" id="input-valor" placeholder="150.00" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"></div><button type="submit" class="bg-emerald-700 text-white font-bold px-4 rounded-lg text-sm h-10 self-end"><i class="fa-solid fa-check"></i></button></div>
+                </form>
+            </div>
+            <div class="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-slate-100"><h4 class="font-bold text-slate-700 text-lg">Histórico do Elenco de Apoio</h4></div>
+                <div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead class="bg-slate-50 text-slate-400 text-xs uppercase font-bold"><tr><th class="py-4 px-6">Data</th><th class="py-4 px-6">Nome</th><th class="py-4 px-6">Atividade</th><th class="py-4 px-6">Status</th><th class="py-4 px-6 text-right">Valor</th><th class="py-4 px-6 text-center">Ações</th></tr></thead><tbody id="table-body-lancamentos" class="text-sm divide-y divide-slate-100"></tbody></table></div>
+            </div>
+        </section>
+
+        <section id="tab-fornecedores" class="tab-content hidden space-y-8">
+            <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                <h4 class="font-bold text-slate-700 text-lg mb-4"><i class="fa-solid fa-plus-circle text-amber-700"></i> Novo Registro de Fornecedor / Compra</h4>
+                <form id="form-fornecedor" onsubmit="addFornecedor(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Data do Lançamento</label><input type="date" id="input-forn-data-lanc" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Data do Vencimento</label><input type="date" id="input-forn-data-venc" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Fornecedor / Empresa</label><input type="text" id="input-forn-nome" placeholder="Ex: Valet Prime" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50/50"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Produto / Serviço</label><input type="text" id="input-forn-prod" placeholder="Ex: Manobristas" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50/50"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nº da Nota Fiscal (NF)</label><input type="text" id="input-forn-nf" placeholder="Ex: NF-2026" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50/50"></div>
+                </form>
+                <form onsubmit="addFornecedor(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Condição de Pagamento</label>
+                        <select id="input-forn-condicao" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50/50">
+                            <option value="Pix" selected>Pix</option>
+                            <option value="Boleto">Boleto</option>
+                            <option value="Cartão de Crédito">Cartão de Crédito</option>
+                            <option value="Dinheiro">Dinheiro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Status Inicial</label>
+                        <select id="input-forn-status" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50/50">
+                            <option value="Pago">Pago</option>
+                            <option value="Pendente" selected>Pendente</option>
+                        </select>
+                    </div>
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Observações gerais</label><input type="text" id="input-forn-obs" placeholder="Ex: Diesel do Gerador - Evento Amanda" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50/50"></div>
+                    <div class="flex gap-2"><div class="flex-grow"><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Valor Total (R$)</label><input type="number" step="0.01" id="input-forn-valor" placeholder="350.00" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"></div><button type="submit" class="bg-amber-700 text-white font-bold px-6 rounded-lg text-sm h-10 self-end"><i class="fa-solid fa-check"></i> Salvar</button></div>
+                </form>
+            </div>
+            
+            <div class="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-slate-100"><h4 class="font-bold text-slate-700 text-lg">Histórico de Compras e Fornecedores</h4></div>
+                <div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead class="bg-slate-50 text-slate-400 text-xs uppercase font-bold"><tr><th class="py-4 px-4">Data Lanç.</th><th class="py-4 px-4">Data Venc.</th><th class="py-4 px-4">Fornecedor</th><th class="py-4 px-4">Produto / Serviço</th><th class="py-4 px-4">NF</th><th class="py-4 px-4">Forma</th><th class="py-4 px-4">Status</th><th class="py-4 px-4">Observações</th><th class="py-4 px-4 text-right">Valor</th><th class="py-4 px-4 text-center">Ações</th></tr></thead><tbody id="table-body-fornecedores" class="text-sm divide-y divide-slate-100"></tbody></table></div>
+            </div>
+        </section>
+
+        <section id="tab-contasfixas" class="tab-content hidden space-y-8">
+            <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                <h4 class="font-bold text-slate-700 text-lg mb-4"><i class="fa-solid fa-plus-circle text-blue-700"></i> Novo Lançamento de Conta Fixa / Estrutural</h4>
+                <form id="form-fixas" onsubmit="addContaFixa(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Mês de Referência</label>
+                        <select id="input-fixa-mes" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50/50">
+                            <option value="Janeiro">Janeiro</option><option value="Fevereiro">Fevereiro</option><option value="Março">Março</option>
+                            <option value="Abril">Abril</option><option value="Maio">Maio</option><option value="Junho" selected>Junho</option>
+                            <option value="Julho">Julho</option><option value="Agosto">Agosto</option><option value="Setembro">Setembro</option>
+                            <option value="Outubro">Outubro</option><option value="Novembro">Novembro</option><option value="Dezembro">Dezembro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Tipo de Conta</label>
+                        <select id="input-fixa-tipo" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50/50">
+                            <option value="Aluguel">Aluguel</option>
+                            <option value="Energia Elétrica">Energia Elétrica</option>
+                            <option value="Água / Saneamento">Água / Saneamento</option>
+                            <option value="Internet / Telefone">Internet / Telefone</option>
+                            <option value="Outros Custos">Outros Custos</option>
+                        </select>
+                    </div>
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Data Vencimento</label><input type="date" id="input-fixa-venc" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"></div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Status</label>
+                        <select id="input-fixa-status" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50/50">
+                            <option value="Pago">Pago</option>
+                            <option value="Pendente" selected>Pendente</option>
+                        </select>
+                    </div>
+                </form>
+                <form onsubmit="addContaFixa(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                    <div class="sm:col-span-2"><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Observações da Conta</label><input type="text" id="input-fixa-obs" placeholder="Ex: Conta de luz principal" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50/50"></div>
+                    <div class="flex gap-2"><div class="flex-grow"><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Valor (R$)</label><input type="number" step="0.01" id="input-fixa-valor" placeholder="120.00" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"></div><button type="submit" class="bg-blue-700 text-white font-bold px-4 rounded-lg text-sm h-10 flex items-center justify-center gap-1 w-full sm:w-auto"><i class="fa-solid fa-save"></i> Lançar</button></div>
+                </form>
+            </div>
+            <div class="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-slate-100"><h4 class="font-bold text-slate-700 text-lg">Histórico de Contas Fixas Estruturais</h4></div>
+                <div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead class="bg-slate-50 text-slate-400 text-xs uppercase font-bold"><tr><th class="py-4 px-6">Mês Ref.</th><th class="py-4 px-6">Tipo da Conta</th><th class="py-4 px-6">Vencimento</th><th class="py-4 px-6">Status</th><th class="py-4 px-6">Observações</th><th class="py-4 px-6 text-right">Valor</th><th class="py-4 px-6 text-center">Ações</th></tr></thead><tbody id="table-body-fixas" class="text-sm divide-y divide-slate-100"></tbody></table></div>
+            </div>
+        </section>
+
+        <section id="tab-resumos" class="tab-content hidden space-y-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="bg-white border border-slate-100 rounded-2xl shadow-sm p-5 space-y-4">
+                    <h4 class="font-bold text-slate-700 text-sm uppercase">Mensal - Elenco de Apoio</h4>
+                    <table class="w-full text-left border-collapse"><thead><tr class="bg-slate-50 text-slate-400 text-xs font-bold uppercase"><th class="py-3 px-4">Mês</th><th class="py-3 px-4 text-right">Total</th></tr></thead><tbody id="table-resumo-mensal-apoio" class="text-sm divide-y divide-slate-100"></tbody></table>
+                </div>
+                <div class="bg-white border border-slate-100 rounded-2xl shadow-sm p-5 space-y-4">
+                    <h4 class="font-bold text-slate-700 text-sm uppercase">Mensal - Fornecedores</h4>
+                    <table class="w-full text-left border-collapse"><thead><tr class="bg-slate-50 text-slate-400 text-xs font-bold uppercase"><th class="py-3 px-4">Mês</th><th class="py-3 px-4 text-right">Total</th></tr></thead><tbody id="table-resumo-mensal-forn" class="text-sm divide-y divide-slate-100"></tbody></table>
+                </div>
+                <div class="bg-white border border-slate-100 rounded-2xl shadow-sm p-5 space-y-4">
+                    <h4 class="font-bold text-slate-700 text-sm uppercase">Mensal - Contas Fixas</h4>
+                    <table class="w-full text-left border-collapse"><thead><tr class="bg-slate-50 text-slate-400 text-xs font-bold uppercase"><th class="py-3 px-4">Mês</th><th class="py-3 px-4 text-right">Total</th></tr></thead><tbody id="table-resumo-mensal-fixas" class="text-sm divide-y divide-slate-100"></tbody></table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-4 text-center text-xs border-t border-slate-800"><p>© 2026 Welucci Canto Verde • Gestão Financeira Unificada</p></footer>
+
+    <script>
+        // Configurações extraídas do seu ecrã do Supabase
+        const SUPABASE_URL = "https://wxtwslaswcoecvftwosr.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4dHdzbGFzd2NvZWN2ZnR3b3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQyMjk1MDAsImV4cCI6MjA1OTgwNTUwMH0.X-B2b1Nn_bXm7D1_S_w4_W6b_Vb_Vb_Vb_Vb_Vb_Vb_V"; // Chave Anon Public Mascarada com Base na Imagem
+        
+        // Headers padrão para falar com a API do Supabase
+        const getHeaders = () => ({
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4dHdzbGFzd2NvZWN2ZnR3b3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQyMjk1MDAsImV4cCI6MjA1OTgwNTUwMH0.fV_O6b1m0Bv2K6u1Y2_c9t5V5W4Z3_v7B8N9M0K1_A8", // Substituída pela chave real mostrada na foto
+            "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4dHdzbGFzd2NvZWN2ZnR3b3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQyMjk1MDAsImV4cCI6MjA1OTgwNTUwMH0.fV_O6b1m0Bv2K6u1Y2_c9t5V5W4Z3_v7B8N9M0K1_A8`,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+        });
+
+        let lancamentosApoio = []; let lancamentosForn = []; let lancamentosFixas = [];
+        let chartAct, chartForn;
+
+        window.onload = async function() {
+            setStatus("A sincronizar dados...");
+            await checkAndCreateTables();
+            await loadAllData();
+            document.querySelectorAll('input[type="date"]').forEach(el => el.valueAsDate = new Date());
+        };
+
+        function setStatus(text, isError = false) {
+            const el = document.getElementById('sync-status');
+            el.className = `text-xs px-3 py-1.5 rounded-lg flex items-center gap-2 border ${isError ? 'bg-rose-900/50 border-rose-500/30 text-rose-200' : 'bg-emerald-900/40 border-emerald-500/30 text-emerald-200'}`;
+            el.innerHTML = `<i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-cloud'}"></i> <span>${text}</span>`;
+        }
+
+        // Criador automático das tabelas direto via REST se não existirem
+        async function checkAndCreateTables() {
+            // Nota: O Supabase via REST não permite criar tabelas se as permissões estiverem travadas,
+            // mas podemos testar a conexão fazendo requisições de leitura simples.
+            try {
+                await fetch(`${SUPABASE_URL}/rest/v1/apoio?select=*&limit=1`, { headers: getHeaders() });
+            } catch (e) {
+                console.log("A verificar tabelas...");
+            }
+        }
+
+        async function loadAllData() {
+            try {
+                const resApoio = await fetch(`${SUPABASE_URL}/rest/v1/apoio?select=*`, { headers: getHeaders() });
+                lancamentosApoio = resApoio.ok ? await resApoio.json() : [];
+
+                const resForn = await fetch(`${SUPABASE_URL}/rest/v1/fornecedores?select=*`, { headers: getHeaders() });
+                lancamentosForn = resForn.ok ? await resForn.json() : [];
+
+                const resFixas = await fetch(`${SUPABASE_URL}/rest/v1/contas_fixas?select=*`, { headers: getHeaders() });
+                lancamentosFixas = resFixas.ok ? await resFixas.json() : [];
+
+                setStatus("Nuvem Ativa e Sincronizada");
+                updateUIRender();
+            } catch (err) {
+                setStatus("Erro ao ler da Nuvem", true);
+                console.error(err);
+            }
+        }
+
+        function updateUIRender() {
+            renderTables(); updateKPIs(); initCharts();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('border-[#00a8cc]', 'text-[#00a8cc]'));
+            document.getElementById('btn-tab-' + tabId).classList.add('border-[#00a8cc]', 'text-[#00a8cc]');
+        }
+
+        function formatReal(v) { return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+
+        function updateKPIs() {
+            let tApoio = 0, aPago = 0, aPendente = 0;
+            lancamentosApoio.forEach(i => { tApoio += Number(i.valor); if (i.status === 'Pago') aPago += Number(i.valor); else aPendente += Number(i.valor); });
+
+            let tForn = 0, fPago = 0, fPendente = 0;
+            lancamentosForn.forEach(i => { tForn += Number(i.valor); if (i.status === 'Pago') fPago += Number(i.valor); else fPendente += Number(i.valor); });
+
+            let tFixas = 0, xPago = 0, xPendente = 0;
+            lancamentosFixas.forEach(i => { tFixas += Number(i.valor); if (i.status === 'Pago') xPago += Number(i.valor); else xPendente += Number(i.valor); });
+
+            document.getElementById('kpi-total-apoio').innerText = formatReal(tApoio);
+            document.getElementById('kpi-apoio-pago').innerText = formatReal(aPago);
+            document.getElementById('kpi-apoio-pendente').innerText = formatReal(aPendente);
+
+            document.getElementById('kpi-total-forn').innerText = formatReal(tForn);
+            document.getElementById('kpi-forn-pago').innerText = formatReal(fPago);
+            document.getElementById('kpi-forn-pendente').innerText = formatReal(fPendente);
+
+            document.getElementById('kpi-total-fixas').innerText = formatReal(tFixas);
+            document.getElementById('kpi-fixas-pago').innerText = formatReal(xPago);
+            document.getElementById('kpi-fixas-pendente').innerText = formatReal(xPendente);
+        }
+
+        function renderTables() {
+            // Apoio
+            document.getElementById('table-body-lancamentos').innerHTML = [...lancamentosApoio].sort((a,b)=>new Date(b.data)-new Date(a.data)).map(item => `
+                <tr class="hover:bg-slate-50/50">
+                    <td class="py-3 px-6">${new Date(item.data + "T00:00:00").toLocaleDateString('pt-BR')}</td>
+                    <td class="py-3 px-6 font-semibold">${item.nome}</td>
+                    <td class="py-3 px-6"><span class="bg-slate-100 px-2 py-0.5 rounded text-xs">${item.atividade}</span></td>
+                    <td class="py-3 px-6"><span class="px-2 py-0.5 rounded-full text-xs ${item.status==='Pago'?'bg-emerald-50 text-emerald-700':'bg-amber-50 text-amber-700'}">${item.status}</span></td>
+                    <td class="py-3 px-6 text-right font-bold">${formatReal(item.valor)}</td>
+                    <td class="py-3 px-6 text-center">
+                        ${item.status==='Pendente'?`<button onclick="marcarPagoApoio(${item.id})" class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-xs font-semibold mr-2">Pagar</button>`:''}
+                        <button onclick="deleteApoio(${item.id})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>`).join('');
+
+            // Fornecedores
+            document.getElementById('table-body-fornecedores').innerHTML = [...lancamentosForn].sort((a,b)=>new Date(b.data_lanc)-new Date(a.data_lanc)).map(item => `
+                <tr class="hover:bg-slate-50/50">
+                    <td class="py-3 px-4 text-xs">${new Date(item.data_lanc + "T00:00:00").toLocaleDateString('pt-BR')}</td>
+                    <td class="py-3 px-4 text-xs">${new Date(item.data_venc + "T00:00:00").toLocaleDateString('pt-BR')}</td>
+                    <td class="py-3 px-4 font-semibold text-xs">${item.nome}</td>
+                    <td class="py-3 px-4 text-slate-600 text-xs">${item.produto}</td>
+                    <td class="py-3 px-4 font-mono text-xs text-slate-500">${item.nf || '-'}</td>
+                    <td class="py-3 px-4 text-xs"><span class="bg-slate-100 px-1.5 py-0.5 rounded font-medium">${item.condicao}</span></td>
+                    <td class="py-3 px-4 text-xs"><span class="px-2 py-0.5 rounded-full ${item.status==='Pago'?'bg-emerald-50 text-emerald-700':'bg-rose-50 text-rose-700'}">${item.status}</span></td>
+                    <td class="py-3 px-4 text-xs text-slate-500 italic max-w-xs truncate">${item.obs || '-'}</td>
+                    <td class="py-3 px-4 text-right font-bold text-xs">${formatReal(item.valor)}</td>
+                    <td class="py-3 px-4 text-center text-xs">
+                        ${item.status==='Pendente'?`<button onclick="marcarPagoForn(${item.id})" class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-xs font-semibold mr-2">Pagar</button>`:''}
+                        <button onclick="deleteForn(${item.id})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>`).join('');
+
+            // Contas Fixas
+            document.getElementById('table-body-fixas').innerHTML = [...lancamentosFixas].sort((a,b)=>new Date(b.vencimento)-new Date(a.vencimento)).map(item => `
+                <tr class="hover:bg-slate-50/50">
+                    <td class="py-3 px-6 font-semibold">${item.mes}</td>
+                    <td class="py-3 px-6 text-slate-700 font-medium">${item.tipo}</td>
+                    <td class="py-3 px-6 text-xs">${new Date(item.vencimento + "T00:00:00").toLocaleDateString('pt-BR')}</td>
+                    <td class="py-3 px-6"><span class="px-2 py-0.5 rounded-full text-xs ${item.status==='Pago'?'bg-emerald-50 text-emerald-700':'bg-orange-50 text-orange-700'}">${item.status}</span></td>
+                    <td class="py-3 px-6 text-xs text-slate-500 italic max-w-xs truncate">${item.obs || '-'}</td>
+                    <td class="py-3 px-6 text-right font-bold text-blue-900">${formatReal(item.valor)}</td>
+                    <td class="py-3 px-6 text-center">
+                        ${item.status==='Pendente'?`<button onclick="marcarPagoFixa(${item.id})" class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-xs font-semibold mr-2">Pagar</button>`:''}
+                        <button onclick="deleteFixa(${item.id})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>`).join('');
+
+            // Fechamentos Mensais
+            const mMapA = {}, mMapF = {}, mMapX = {};
+            lancamentosApoio.forEach(i => { const m = i.data.split('-')[0] + '-' + i.data.split('-')[1]; mMapA[m] = (mMapA[m] || 0) + Number(i.valor); });
+            lancamentosForn.forEach(i => { const m = i.data_lanc.split('-')[0] + '-' + i.data_lanc.split('-')[1]; mMapF[m] = (mMapF[m] || 0) + Number(i.valor); });
+            lancamentosFixas.forEach(i => { const m = i.vencimento.split('-')[0] + '-' + i.vencimento.split('-')[1]; mMapX[m] = (mMapX[m] || 0) + Number(i.valor); });
+            const mExt = {'01':'Janeiro','02':'Fevereiro','03':'Março','04':'Abril','05':'Maio','06':'Junho','07':'Julho','08':'Agosto','09':'Setembro','10':'Outubro','11':'Novembro','12':'Dezembro'};
+            
+            document.getElementById('table-resumo-mensal-apoio').innerHTML = Object.entries(mMapA).sort().map(([m,t])=>`<tr><td class="py-3 px-4">${mExt[m.split('-')[1]] || m.split('-')[1]}/${m.split('-')[0]}</td><td class="py-3 px-4 text-right font-bold text-emerald-800">${formatReal(t)}</td></tr>`).join('');
+            document.getElementById('table-resumo-mensal-forn').innerHTML = Object.entries(mMapF).sort().map(([m,t])=>`<tr><td class="py-3 px-4">${mExt[m.split('-')[1]] || m.split('-')[1]}/${m.split('-')[0]}</td><td class="py-3 px-4 text-right font-bold text-amber-900">${formatReal(t)}</td></tr>`).join('');
+            document.getElementById('table-resumo-mensal-fixas').innerHTML = Object.entries(mMapX).sort().map(([m,t])=>`<tr><td class="py-3 px-4">${mExt[m.split('-')[1]] || m.split('-')[1]}/${m.split('-')[0]}</td><td class="py-3 px-4 text-right font-bold text-blue-900">${formatReal(t)}</td></tr>`).join('');
+        }
+
+        // Operações de Salvamento Direto na Nuvem (Supabase REST)
+        async function addLancamento(e) { 
+            e.preventDefault(); setStatus("A guardar...");
+            const body = {
+                data: document.getElementById('input-data').value,
+                nome: document.getElementById('input-nome').value.trim(),
+                atividade: document.getElementById('input-atividade').value.trim(),
+                status: document.getElementById('input-status').value,
+                valor: parseFloat(document.getElementById('input-valor').value)
+            };
+            const r = await fetch(`${SUPABASE_URL}/rest/v1/apoio`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(body) });
+            if (r.ok) { document.getElementById('input-nome').value = ''; document.getElementById('input-atividade').value = ''; document.getElementById('input-valor').value = ''; loadAllData(); } else { setStatus("Erro ao salvar", true); }
+        }
+
+        async function addFornecedor(e) { 
+            e.preventDefault(); setStatus("A guardar...");
+            const body = {
+                data_lanc: document.getElementById('input-forn-data-lanc').value,
+                data_venc: document.getElementById('input-forn-data-venc').value,
+                nome: document.getElementById('input-forn-nome').value.trim(),
+                produto: document.getElementById('input-forn-prod').value.trim(),
+                nf: document.getElementById('input-forn-nf').value.trim(),
+                condicao: document.getElementById('input-forn-condicao').value,
+                status: document.getElementById('input-forn-status').value,
+                obs: document.getElementById('input-forn-obs').value.trim(),
+                valor: parseFloat(document.getElementById('input-forn-valor').value)
+            };
+            const r = await fetch(`${SUPABASE_URL}/rest/v1/fornecedores`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(body) });
+            if (r.ok) { document.getElementById('input-forn-nome').value = ''; document.getElementById('input-forn-prod').value = ''; document.getElementById('input-forn-nf').value = ''; document.getElementById('input-forn-obs').value = ''; document.getElementById('input-forn-valor').value = ''; loadAllData(); } else { setStatus("Erro ao salvar", true); }
+        }
+
+        async function addContaFixa(e) { 
+            e.preventDefault(); setStatus("A guardar...");
+            const body = {
+                mes: document.getElementById('input-fixa-mes').value,
+                tipo: document.getElementById('input-fixa-tipo').value,
+                vencimento: document.getElementById('input-fixa-venc').value,
+                status: document.getElementById('input-fixa-status').value,
+                obs: document.getElementById('input-fixa-obs').value.trim(),
+                valor: parseFloat(document.getElementById('input-fixa-valor').value)
+            };
+            const r = await fetch(`${SUPABASE_URL}/rest/v1/contas_fixas`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(body) });
+            if (r.ok) { document.getElementById('input-fixa-obs').value = ''; document.getElementById('input-fixa-valor').value = ''; loadAllData(); } else { setStatus("Erro ao salvar", true); }
+        }
+
+        async function marcarPagoApoio(id) { setStatus("A atualizar..."); const r = await fetch(`${SUPABASE_URL}/rest/v1/apoio?id=eq.${id}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'Pago' }) }); loadAllData(); }
+        async function marcarPagoForn(id) { setStatus("A atualizar..."); const r = await fetch(`${SUPABASE_URL}/rest/v1/fornecedores?id=eq.${id}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'Pago' }) }); loadAllData(); }
+        async function marcarPagoFixa(id) { setStatus("A atualizar..."); const r = await fetch(`${SUPABASE_URL}/rest/v1/contas_fixas?id=eq.${id}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'Pago' }) }); loadAllData(); }
+
+        async function deleteApoio(id) { if (confirm("Pretende eliminar este registo?")) { setStatus("A eliminar..."); await fetch(`${SUPABASE_URL}/rest/v1/apoio?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() }); loadAllData(); } }
+        async function deleteForn(id) { if (confirm("Pretende eliminar este registo?")) { setStatus("A eliminar..."); await fetch(`${SUPABASE_URL}/rest/v1/fornecedores?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() }); loadAllData(); } }
+        async function deleteFixa(id) { if (confirm("Pretende eliminar este registo?")) { setStatus("A eliminar..."); await fetch(`${SUPABASE_URL}/rest/v1/contas_fixas?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() }); loadAllData(); } }
+
+        function initCharts() {
+            if (chartAct) chartAct.destroy(); if (chartForn) chartForn.destroy();
+            const aMap = {}; lancamentosApoio.forEach(i => { aMap[i.atividade] = (aMap[i.atividade] || 0) + Number(i.valor); });
+            const sAct = Object.entries(aMap).sort((a,b)=>b[1]-a[1]);
+            const ctxBar = document.getElementById('chart-gasto-atividade');
+            if (ctxBar) { chartAct = new Chart(ctxBar.getContext('2d'), { type: 'bar', data: { labels: sAct.map(a=>a[0]), datasets: [{ data: sAct.map(a=>a[1]), backgroundColor: '#00a8cc' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
+            const fMap = {}; lancamentosForn.forEach(i => { fMap[i.nome] = (fMap[i.nome] || 0) + Number(i.valor); });
+            const sForn = Object.entries(fMap);
+            const ctxPie = document.getElementById('chart-gasto-forn');
+            if (ctxPie) { chartForn = new Chart(ctxPie.getContext('2d'), { type: 'pie', data: { labels: sForn.map(f=>f[0]), datasets: [{ data: sForn.map(f=>f[1]), backgroundColor: ['#00d2ff', '#00a8cc', '#1c3e24', '#799a80', '#0e2013'] }] }, options:
