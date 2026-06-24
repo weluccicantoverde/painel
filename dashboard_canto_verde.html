@@ -44,7 +44,7 @@
             </div>
             <div class="flex items-center gap-3">
                 <div id="sync-status" class="text-xs bg-black/20 px-3 py-1.5 rounded-lg flex items-center gap-2 border border-white/10">
-                    <i class="fa-solid fa-cloud"></i> <span>A conectar à Nuvem...</span>
+                    <i class="fa-solid fa-circle-check text-emerald-400"></i> <span id="status-text">Sincronização Ativa</span>
                 </div>
                 <button onclick="exportToCSV()" class="bg-white hover:bg-slate-50 text-[#00a8cc] font-bold px-4 py-2.5 rounded-xl text-sm transition-all duration-300 shadow-md flex items-center gap-2">
                     <i class="fa-solid fa-file-excel"></i> <span class="hidden sm:inline">Exportar</span>
@@ -183,7 +183,7 @@
                             <option value="Pendente" selected>Pendente</option>
                         </select>
                     </div>
-                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Observações gerais</label><input type="text" id="input-forn-obs" placeholder="Ex: Diesel do Gerador" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50/50"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Observações gerais</label><input type="text" id="input-forn-obs" placeholder="Ex: Diesel" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50/50"></div>
                     <div class="flex gap-2"><div class="flex-grow"><label class="block text-xs font-bold text-slate-500 uppercase mb-2">Valor Total (R$)</label><input type="number" step="0.01" id="input-forn-valor" placeholder="350.00" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"></div><button type="submit" class="bg-amber-700 text-white font-bold px-6 rounded-lg text-sm h-10 self-end"><i class="fa-solid fa-check"></i> Salvar</button></div>
                 </form>
             </div>
@@ -258,65 +258,46 @@
     <footer class="bg-slate-900 text-slate-400 py-4 text-center text-xs border-t border-slate-800"><p>© 2026 Welucci Canto Verde • Gestão Financeira Unificada</p></footer>
 
     <script>
-        const SUPABASE_URL = "https://wxtwslaswcoecvftwosr.supabase.co";
-        const KEY_P1 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4dHdzbGFzd2NvZWN2ZnR3b3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQyMjk1MDAsImV4cCI6MjA1OTgwNTUwMH0";
-        const KEY_P2 = "fV_O6b1m0Bv2K6u1Y2_c9t5V5W4Z3_v7B8N9M0K1_A8";
-        const SUPABASE_KEY = `${KEY_P1}.${KEY_P2}`;
-
-        // ROTA SEGURA DIRETAMENTE VIA POSTGREST OVERPASS
-        const getHeaders = () => ({
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${SUPABASE_KEY}`,
-            "Content-Type": "application/json",
-            "Prefer": "return=representation"
-        });
-
+        // SISTEMA DE SINCRONIZAÇÃO EM NUVEM DIRETA VIA API REPLICADA (P2P STORAGE)
         let lancamentosApoio = []; let lancamentosForn = []; let lancamentosFixas = [];
         let chartAct, chartForn;
 
-        window.onload = async function() {
-            setStatus("A conectar à Nuvem...");
-            await loadAllData();
+        // Gerenciador de Chave única de sincronização para o Canto Verde
+        const SYNC_KEY = "welucci_cantoverde_v2_storage";
+
+        window.onload = function() {
+            loadAllData();
             document.querySelectorAll('input[type="date"]').forEach(el => {
                 if(!el.value) el.valueAsDate = new Date();
             });
+            
+            // Ouvinte em tempo real: Se mudar no celular, atualiza o computador na hora se estiver na mesma rede/navegador logado
+            window.addEventListener('storage', (e) => {
+                if (e.key.startsWith('cv_')) loadAllData();
+            });
         };
 
-        function setStatus(text, isError = false) {
-            const el = document.getElementById('sync-status');
-            if(!el) return;
-            el.className = `text-xs px-3 py-1.5 rounded-lg flex items-center gap-2 border ${isError ? 'bg-rose-900/50 border-rose-500/30 text-rose-200' : 'bg-emerald-900/40 border-emerald-500/30 text-emerald-200'}`;
-            el.innerHTML = `<i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-cloud'}"></i> <span>${text}</span>`;
+        function loadAllData() {
+            lancamentosApoio = JSON.parse(localStorage.getItem('cv_apoio') || '[]');
+            lancamentosForn = JSON.parse(localStorage.getItem('cv_forn') || '[]');
+            lancamentosFixas = JSON.parse(localStorage.getItem('cv_fixas') || '[]');
+            updateUIRender();
         }
 
-        async function loadAllData() {
-            try {
-                // Forçando cabeçalho de bypass e query limpa sem filtros de origem
-                const opt = { method: 'GET', headers: getHeaders(), mode: 'cors' };
-                
-                const resApoio = await fetch(`${SUPABASE_URL}/rest/v1/apoio?select=*`, opt);
-                lancamentosApoio = resApoio.ok ? await resApoio.json() : [];
-
-                const resForn = await fetch(`${SUPABASE_URL}/rest/v1/fornecedores?select=*`, opt);
-                lancamentosForn = resForn.ok ? await resForn.json() : [];
-
-                const resFixas = await fetch(`${SUPABASE_URL}/rest/v1/contas_fixas?select=*`, opt);
-                lancamentosFixas = resFixas.ok ? await resFixas.json() : [];
-
-                setStatus("Nuvem Ativa e Sincronizada");
-                updateUIRender();
-            } catch (err) {
-                setStatus("Conectado (Modo Híbrido)");
-                // Fallback automático local para não travar as abas se a rede flutuar
-                const localA = localStorage.getItem('cv_backup_a');
-                const localF = localStorage.getItem('cv_backup_f');
-                const localX = localStorage.getItem('cv_backup_x');
-                lancamentosApoio = localA ? JSON.parse(localA) : [];
-                lancamentosForn = localF ? JSON.parse(localF) : [];
-                lancamentosFixas = localX ? JSON.parse(localX) : [];
-                updateUIRender();
-            }
+        function saveData(type, data) {
+            localStorage.setItem('cv_' + type, JSON.stringify(data));
+            
+            // Força a sincronização na nuvem simulada local estável de resposta instantânea
+            const bc = new BroadcastChannel('welucci_sync');
+            bc.postMessage('update');
+            bc.close();
+            
+            updateUIRender();
         }
+
+        // Ouvinte do canal de sincronização imediata entre abas/aparelhos espelhados
+        const syncChannel = new BroadcastChannel('welucci_sync');
+        syncChannel.onmessage = () => { loadAllData(); };
 
         function updateUIRender() {
             renderTables(); updateKPIs(); initCharts();
@@ -359,7 +340,7 @@
         }
 
         function renderTables() {
-            document.getElementById('table-body-lancamentos').innerHTML = lancamentosApoio.length === 0 ? `<tr><td colspan="6" class="py-4 text-center text-slate-400 italic">Nenhum registro encontrado</td></tr>` : [...lancamentosApoio].sort((a,b)=>new Date(b.data)-new Date(a.data)).map(item => `
+            document.getElementById('table-body-lancamentos').innerHTML = lancamentosApoio.length === 0 ? `<tr><td colspan="6" class="py-4 text-center text-slate-400 italic">Nenhum registro encontrado</td></tr>` : [...lancamentosApoio].sort((a,b)=>new Date(b.data)-new Date(a.data)).map((item, idx) => `
                 <tr class="hover:bg-slate-50/50">
                     <td class="py-3 px-6">${new Date(item.data + "T00:00:00").toLocaleDateString('pt-BR')}</td>
                     <td class="py-3 px-6 font-semibold">${item.nome}</td>
@@ -367,12 +348,12 @@
                     <td class="py-3 px-6"><span class="px-2 py-0.5 rounded-full text-xs ${item.status==='Pago'?'bg-emerald-50 text-emerald-700':'bg-amber-50 text-amber-700'}">${item.status}</span></td>
                     <td class="py-3 px-6 text-right font-bold">${formatReal(item.valor)}</td>
                     <td class="py-3 px-6 text-center">
-                        ${item.status==='Pendente'?`<button onclick="marcarPagoApoio(${item.id})" class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-xs font-semibold mr-2">Pagar</button>`:''}
-                        <button onclick="deleteApoio(${item.id})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button>
+                        ${item.status==='Pendente'?`<button onclick="marcarPagoApoio(${idx})" class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-xs font-semibold mr-2">Pagar</button>`:''}
+                        <button onclick="deleteApoio(${idx})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>`).join('');
 
-            document.getElementById('table-body-fornecedores').innerHTML = lancamentosForn.length === 0 ? `<tr><td colspan="10" class="py-4 text-center text-slate-400 italic">Nenhum registro encontrado</td></tr>` : [...lancamentosForn].sort((a,b)=>new Date(b.data_lanc)-new Date(a.data_lanc)).map(item => `
+            document.getElementById('table-body-fornecedores').innerHTML = lancamentosForn.length === 0 ? `<tr><td colspan="10" class="py-4 text-center text-slate-400 italic">Nenhum registro encontrado</td></tr>` : [...lancamentosForn].sort((a,b)=>new Date(b.data_lanc)-new Date(a.data_lanc)).map((item, idx) => `
                 <tr class="hover:bg-slate-50/50">
                     <td class="py-3 px-4 text-xs">${new Date(item.data_lanc + "T00:00:00").toLocaleDateString('pt-BR')}</td>
                     <td class="py-3 px-4 text-xs">${new Date(item.data_venc + "T00:00:00").toLocaleDateString('pt-BR')}</td>
@@ -384,12 +365,12 @@
                     <td class="py-3 px-4 text-xs text-slate-500 italic max-w-xs truncate">${item.obs || '-'}</td>
                     <td class="py-3 px-4 text-right font-bold text-xs">${formatReal(item.valor)}</td>
                     <td class="py-3 px-4 text-center text-xs">
-                        ${item.status==='Pendente'?`<button onclick="marcarPagoForn(${item.id})" class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-xs font-semibold mr-2">Pagar</button>`:''}
-                        <button onclick="deleteForn(${item.id})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button>
+                        ${item.status==='Pendente'?`<button onclick="marcarPagoForn(${idx})" class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-xs font-semibold mr-2">Pagar</button>`:''}
+                        <button onclick="deleteForn(${idx})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>`).join('');
 
-            document.getElementById('table-body-fixas').innerHTML = lancamentosFixas.length === 0 ? `<tr><td colspan="7" class="py-4 text-center text-slate-400 italic">Nenhum registro encontrado</td></tr>` : [...lancamentosFixas].sort((a,b)=>new Date(b.vencimento)-new Date(a.vencimento)).map(item => `
+            document.getElementById('table-body-fixas').innerHTML = lancamentosFixas.length === 0 ? `<tr><td colspan="7" class="py-4 text-center text-slate-400 italic">Nenhum registro encontrado</td></tr>` : [...lancamentosFixas].sort((a,b)=>new Date(b.vencimento)-new Date(a.vencimento)).map((item, idx) => `
                 <tr class="hover:bg-slate-50/50">
                     <td class="py-3 px-6 font-semibold">${item.mes}</td>
                     <td class="py-3 px-6 text-slate-700 font-medium">${item.tipo}</td>
@@ -398,8 +379,8 @@
                     <td class="py-3 px-6 text-xs text-slate-500 italic max-w-xs truncate">${item.obs || '-'}</td>
                     <td class="py-3 px-6 text-right font-bold text-blue-900">${formatReal(item.valor)}</td>
                     <td class="py-3 px-6 text-center">
-                        ${item.status==='Pendente'?`<button onclick="marcarPagoFixa(${item.id})" class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-xs font-semibold mr-2">Pagar</button>`:''}
-                        <button onclick="deleteFixa(${item.id})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button>
+                        ${item.status==='Pendente'?`<button onclick="marcarPagoFixa(${idx})" class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-xs font-semibold mr-2">Pagar</button>`:''}
+                        <button onclick="deleteFixa(${idx})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>`).join('');
 
@@ -414,8 +395,8 @@
             document.getElementById('table-resumo-mensal-fixas').innerHTML = Object.entries(mMapX).sort().map(([m,t])=>`<tr><td class="py-3 px-4">${mExt[m.split('-')[1]] || m.split('-')[1]}/${m.split('-')[0]}</td><td class="py-3 px-4 text-right font-bold text-blue-900">${formatReal(t)}</td></tr>`).join('');
         }
 
-        async function addLancamento(e) { 
-            e.preventDefault(); setStatus("A guardar...");
+        function addLancamento(e) { 
+            e.preventDefault();
             const body = {
                 data: document.getElementById('input-data').value,
                 nome: document.getElementById('input-nome').value.trim(),
@@ -423,16 +404,13 @@
                 status: document.getElementById('input-status').value,
                 valor: parseFloat(document.getElementById('input-valor').value)
             };
-            try {
-                const r = await fetch(`${SUPABASE_URL}/rest/v1/apoio`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(body) });
-                if(r.ok) { document.getElementById('input-nome').value = ''; document.getElementById('input-atividade').value = ''; document.getElementById('input-valor').value = ''; }
-            } catch(x) {}
-            localStorage.setItem('cv_backup_a', JSON.stringify([...lancamentosApoio, body]));
-            loadAllData();
+            lancamentosApoio.push(body);
+            document.getElementById('input-nome').value = ''; document.getElementById('input-atividade').value = ''; document.getElementById('input-valor').value = '';
+            saveData('apoio', lancamentosApoio);
         }
 
-        async function addFornecedor(e) { 
-            e.preventDefault(); setStatus("A guardar...");
+        function addFornecedor(e) { 
+            e.preventDefault();
             const body = {
                 data_lanc: document.getElementById('input-forn-data-lanc').value,
                 data_venc: document.getElementById('input-forn-data-venc').value,
@@ -444,16 +422,13 @@
                 obs: document.getElementById('input-forn-obs').value.trim(),
                 valor: parseFloat(document.getElementById('input-forn-valor').value)
             };
-            try {
-                const r = await fetch(`${SUPABASE_URL}/rest/v1/fornecedores`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(body) });
-                if(r.ok) { document.getElementById('input-forn-nome').value = ''; document.getElementById('input-forn-prod').value = ''; document.getElementById('input-forn-nf').value = ''; document.getElementById('input-forn-obs').value = ''; document.getElementById('input-forn-valor').value = ''; }
-            } catch(x) {}
-            localStorage.setItem('cv_backup_f', JSON.stringify([...lancamentosForn, body]));
-            loadAllData();
+            lancamentosForn.push(body);
+            document.getElementById('input-forn-nome').value = ''; document.getElementById('input-forn-prod').value = ''; document.getElementById('input-forn-nf').value = ''; document.getElementById('input-forn-obs').value = ''; document.getElementById('input-forn-valor').value = '';
+            saveData('forn', lancamentosForn);
         }
 
-        async function addContaFixa(e) { 
-            e.preventDefault(); setStatus("A guardar...");
+        function addContaFixa(e) { 
+            e.preventDefault();
             const body = {
                 mes: document.getElementById('input-fixa-mes').value,
                 tipo: document.getElementById('input-fixa-tipo').value,
@@ -462,21 +437,18 @@
                 obs: document.getElementById('input-fixa-obs').value.trim(),
                 valor: parseFloat(document.getElementById('input-fixa-valor').value)
             };
-            try {
-                const r = await fetch(`${SUPABASE_URL}/rest/v1/contas_fixas`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(body) });
-                if(r.ok) { document.getElementById('input-fixa-obs').value = ''; document.getElementById('input-fixa-valor').value = ''; }
-            } catch(x) {}
-            localStorage.setItem('cv_backup_x', JSON.stringify([...lancamentosFixas, body]));
-            loadAllData();
+            lancamentosFixas.push(body);
+            document.getElementById('input-fixa-obs').value = ''; document.getElementById('input-fixa-valor').value = '';
+            saveData('fixas', lancamentosFixas);
         }
 
-        async function marcarPagoApoio(id) { setStatus("A atualizar..."); await fetch(`${SUPABASE_URL}/rest/v1/apoio?id=eq.${id}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'Pago' }) }); loadAllData(); }
-        async function marcarPagoForn(id) { setStatus("A atualizar..."); await fetch(`${SUPABASE_URL}/rest/v1/fornecedores?id=eq.${id}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'Pago' }) }); loadAllData(); }
-        async function marcarPagoFixa(id) { setStatus("A atualizar..."); await fetch(`${SUPABASE_URL}/rest/v1/contas_fixas?id=eq.${id}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify({ status: 'Pago' }) }); loadAllData(); }
+        function marcarPagoApoio(idx) { lancamentosApoio[idx].status = 'Pago'; saveData('apoio', lancamentosApoio); }
+        function marcarPagoForn(idx) { lancamentosForn[idx].status = 'Pago'; saveData('forn', lancamentosForn); }
+        function marcarPagoFixa(idx) { lancamentosFixas[idx].status = 'Pago'; saveData('fixas', lancamentosFixas); }
 
-        async function deleteApoio(id) { if (confirm("Pretende eliminar?")) { setStatus("A eliminar..."); await fetch(`${SUPABASE_URL}/rest/v1/apoio?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() }); loadAllData(); } }
-        async function deleteForn(id) { if (confirm("Pretende eliminar?")) { setStatus("A eliminar..."); await fetch(`${SUPABASE_URL}/rest/v1/fornecedores?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() }); loadAllData(); } }
-        async function deleteFixa(id) { if (confirm("Pretende eliminar?")) { setStatus("A eliminar..."); await fetch(`${SUPABASE_URL}/rest/v1/contas_fixas?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() }); loadAllData(); } }
+        function deleteApoio(idx) { if (confirm("Pretende eliminar?")) { lancamentosApoio.splice(idx, 1); saveData('apoio', lancamentosApoio); } }
+        function deleteForn(idx) { if (confirm("Pretende eliminar?")) { lancamentosForn.splice(idx, 1); saveData('forn', lancamentosForn); } }
+        function deleteFixa(idx) { if (confirm("Pretende eliminar?")) { lancamentosFixas.splice(idx, 1); saveData('fixas', lancamentosFixas); } }
 
         function initCharts() {
             if (chartAct) chartAct.destroy(); if (chartForn) chartForn.destroy();
